@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+         *{
+            margin:0;
+            padding:0;
+            font-family:'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
+        }
+/*
+        body{
+            height:100vh;
+            width:100vw;
+            color:white;
+            display:flex;
+            align-items:center;
+            flex-direction:column;
+            justify-content: space-evenly;
+            background:linear-gradient(to right top,gray,purple)
+        }
+
+        .textDiv{
+            text-align:center;
+        }
+
+        p::after{
+            content:"Too Studios";
+            color:red;
+        }
+
+        canvas{
+            height:100vh;
+            width:100vw;
+            border:2px solid white;
+            border-radius:5%;
+        } */
+
+    </style>
+    <title>Canvas Shooter</title>
+</head>
+<body>
+    <!-- <div class='textDiv'>
+    <h1>Canvas Shooter</h1>
+    <p>EnvyMe</p>
+    <h3>Score:<span class='score'></span></h3>
+    </div> -->
+    <canvas></canvas>
+
+
+    <script>
+        var canvas = document.querySelector("canvas");
+        canvas.width= innerWidth;
+        canvas.height = innerHeight;
+
+        var context = canvas.getContext('2d');
+        context.fillStyle="black";
+        context.fillRect(0,0,canvas.width,canvas.height)
+
+
+
+        class Player{
+            constructor(x,y,r,color){
+                this.x = x;
+                this.y = y;
+                this.r = r;
+                this.color = color;
+            }
+
+            draw(){
+                context.beginPath();
+                context.fillStyle = this.color;
+                context.arc(this.x,this.y,this.r,Math.PI * 2,false);
+                context.fill()
+            }
+        }
+
+        class Bullet{
+            constructor(x,y,r,color,vel){
+                this.x = x;
+                this.y = y;
+                this.r = r;
+                this.color = color;
+                this.toDelete=false;
+                this.vel = vel;
+            }
+
+            draw(){
+                context.beginPath();
+                context.fillStyle = this.color;
+                context.arc(this.x,this.y,this.r,Math.PI * 2,false);
+                context.fill()
+            }
+
+
+            update(){
+                this.draw()
+                this.x += this.vel.x;
+                this.y += this.vel.y;
+
+                if(this.x < -50 ||
+                   this.x > canvas.width + 50 ||
+                   this.y < -50 ||
+                   this.y > canvas.height + 50){
+                       this.toDelete=true;
+                   }
+            }
+
+
+            hit(enemy){
+                let dist = Math.hypot(enemy.x - this.x,
+                                      enemy.y - this.y);
+                if(dist < enemy.r){
+                    this.toDelete=true;
+                    return true;
+                }
+            }
+        }
+
+
+
+
+        class Enemy{
+            constructor(x,y,r,color,vel){
+                this.x = x;
+                this.y = y;
+                this.r = r;
+                this.color = color;
+                this.toDelete=false;
+                this.vel = vel;
+                this.isKilled = false;
+            }
+
+            draw(){
+                context.beginPath();
+                context.fillStyle = this.color;
+                context.arc(this.x,this.y,this.r,Math.PI * 2,false);
+                context.fill()
+            }
+
+
+            update(){
+                this.draw()
+                this.x += this.vel.x;
+                this.y += this.vel.y;
+
+                if(this.x < -50 ||
+                   this.x > canvas.width + 50 ||
+                   this.y < -50 ||
+                   this.y > canvas.height + 50){
+                       this.toDelete=true;
+                   }
+            }
+
+
+            hit(player){
+                let dist = Math.hypot(player.x - this.x,
+                                      player.y - this.y);
+                if(dist < player.r){
+                    this.toDelete=true;
+                    return true;
+                }
+            }
+
+            takeDamage(){
+                this.r -= 4;
+                if(this.r < 12){
+                    this.isKilled=true;
+                }
+            }
+        }
+
+
+
+    class Particles{
+        constructor(x,y,r,color,vel){
+            this.x = x;
+            this.y = y;
+            this.originalX=x;
+            this.originalY=y;
+            this.r = r;
+            this.color = color;
+            this.vel = vel;
+            this.toDelete = false;
+        }
+
+
+        draw(){
+            context.beginPath();
+            context.fillStyle=this.color;
+            context.arc(this.x,this.y,this.r,Math.PI * 2,false);
+            context.fill()
+        }
+
+        update(){
+            this.draw()
+            this.x += this.vel.x;
+            this.y += this.vel.y;
+
+            let dist = Math.hypot(this.x - this.originalX, this.y - this.originalY);
+
+            if(dist > 120){
+                this.toDelete=true;
+            }
+        }
+    }
+
+
+let playerX = canvas.width/2
+let playerY = canvas.height/2
+
+let player = new Player(playerX,playerY,'40','white');
+let bullets = [];
+let enemies = [];
+let particles =[];
+let score=0;
+let enemyInterval;
+let gameInterval;
+
+
+player.draw()
+
+ enemyInterval = setInterval(enemySpawn,2000)
+
+        function gameLoop(){
+
+            gameInterval = requestAnimationFrame(gameLoop)
+
+
+            context.fillStyle='rgba(0,0,0,.4)'
+            context.fillRect(0,0,canvas.width,canvas.height)
+
+            context.font = "30px Arial";
+            context.fillStyle='white'
+            var textX=(canvas.width/4);
+
+          
+            context.fillText("EnvyMeToo Studios",textX, 50);
+            context.fillText(`Score:${score}`,textX+75, 100);
+
+
+            player.draw()
+
+            bullets.forEach((bullet,idx)=>{
+                bullet.update()
+              
+                enemies.forEach(e=>{
+                    if(bullet.hit(e)){
+                        score+=2
+                        e.takeDamage();
+                    }
+                   
+                })
+
+                if(bullet.toDelete){
+                    bullets.splice(idx,1)
+                }
+            })
+
+
+            enemies.forEach((e,idx)=>{
+                e.update();
+                     if(e.hit(player)){
+                        console.log("Playerhit!!")
+                        player.r-=3;
+                        e.toDelete=true;
+                     if(player.r <= 12){
+                            cancelAnimationFrame(gameInterval)
+                            let highScore = sessionStorage.getItem('score') | 0;
+                            alert(`HIGH SCORE:${highScore} \n Game Over! Your score was ${score}.`);
+                            if(score > highScore){
+                            sessionStorage.setItem('score',score);
+                            }
+                            window.location.reload()
+
+                        }
+                    }
+
+                if(e.toDelete){
+                    enemies.splice(idx,1)
+                }
+                
+                if(e.isKilled){
+                    explosion(e)
+                    enemies.splice(idx,1)
+                    score+=50
+
+                }
+            })
+
+
+            particles.forEach((particle,idx)=>{
+                particle.update();
+
+                if(particle.toDelete){
+                    particles.splice(idx,1)
+                }
+            })
+
+        }
+
+
+         gameLoop()
+
+
+        onclick=(e)=>{
+            console.log(e)
+            let angle = Math.atan2(e.clientY - playerY, 
+                                   e.clientX - playerX);
+
+            let vel={x:Math.cos(angle)*3,y:Math.sin(angle)*3}
+
+            console.log("PlayerX: " + playerX)
+            console.log("PlayerY: " + playerY)
+            console.log(vel)
+
+            bullets.push(new Bullet(playerX,playerY,4,'white',vel))
+            console.log(bullets)
+        }
+
+
+        function enemySpawn(){
+            let enemyX = Math.random() * canvas.width | 0;
+            let enemyY = Math.random() * canvas.height | 0;
+
+            if(enemyX > canvas.width/2){
+                enemyX = canvas.width;
+            }
+            else{
+                enemyX = 0;
+            }
+
+            let angle = Math.atan2(playerY - enemyY,
+                                   playerX - enemyX);
+
+                let vel = {x:Math.cos(angle),y:Math.sin(angle)};
+                let colorNum =Math.random() * 300 | 0
+            // console.log(colorNum)
+                enemies.push(new Enemy(enemyX,enemyY,((Math.random() * 18 | 0) + 22),`hsl(${colorNum},100%,50%)`,vel));
+
+                // console.log(enemies)
+        }
+
+
+function explosion(enemy){
+
+
+    for(let i=0 ; i<((Math.random() * 8 | 0) + 2) ;i++){
+        particles.push(new Particles(enemy.x,enemy.y,2,enemy.color,{x:Math.random(),y:Math.random()}))
+    }
+}
+
+
+
+
+
+    </script>
+</body>
+</html>
